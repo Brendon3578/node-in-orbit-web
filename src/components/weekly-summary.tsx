@@ -3,20 +3,35 @@ import { InOrbitIcon } from "./svg/in-orbit-icon";
 import { DialogTrigger } from "@radix-ui/react-dialog";
 import { Progress, ProgressIndicator } from "@radix-ui/react-progress";
 import { Separator } from "./ui/separator";
-import { OutlineButton } from "./ui/outline-button";
+import ptBR from "dayjs/locale/pt-BR";
+import dayjs from "dayjs";
+import { PendingGoals } from "./pending-goals";
+import type { SummaryResponse } from "../http/get-summary";
 
-export function WeeklySummary() {
-  const completionPercentage = {
-    width: `${(8 / 15) * 100}%`,
-    label: `${((8 / 15) * 100).toFixed(0)}%`,
-  };
+interface WeeklySummaryProps {
+  summary: SummaryResponse["summary"];
+}
+
+dayjs.locale(ptBR);
+
+export function WeeklySummary({ summary }: WeeklySummaryProps) {
+  const fromDate = dayjs().startOf("week").format("D[ de ]MMM");
+  const toDate = dayjs().endOf("week").format("D[ de ]MMM");
+
+  const completedPercentage = Math.round(
+    (summary.completed / summary.total) * 100
+  );
+
+  const now = dayjs();
 
   return (
     <main className="max-w-[480px] py-10 px-5 mx-auto flex flex-col gap-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <InOrbitIcon />
-          <span className="text-lg font-semibold">05 a 12 de Agosto</span>
+          <span className="text-lg font-semibold">
+            {fromDate} - {toDate}
+          </span>
         </div>
 
         <DialogTrigger className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-violet-500 text-indigo-50 text-sm font-medium tracking-tight hover:bg-violet-600">
@@ -26,146 +41,92 @@ export function WeeklySummary() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <Progress value={8} max={15} className="bg-zinc-900 rounded-full h-2">
+        <Progress
+          value={summary.completed}
+          max={summary.total}
+          className="bg-zinc-900 rounded-full h-2"
+        >
           <ProgressIndicator
-            style={{ width: completionPercentage.width }}
             className="bg-gradient-to-r from-pink-500 to-violet-500 h-2 rounded-full"
+            style={{ width: `${completedPercentage}%` }}
           />
         </Progress>
 
         <div className="flex items-center justify-between text-xs text-zinc-400">
           <span>
-            Você completou <span className="text-zinc-100">8</span> de{" "}
-            <span className="text-zinc-100">15</span> metas nessa semana.
+            Você completou{" "}
+            <span className="text-zinc-100">{summary.completed}</span> de{" "}
+            <span className="text-zinc-100">{summary.total}</span> metas nessa
+            semana.
           </span>
-          <span>{completionPercentage.label}</span>
+          <span>{completedPercentage}%</span>
         </div>
       </div>
 
       <Separator />
 
-      <div className="flex flex-wrap gap-3">
-        <OutlineButton>
-          <Plus className="size-4 text-zinc-600" />
-          Meditar
-        </OutlineButton>
+      <PendingGoals />
 
-        <OutlineButton>
-          <Plus className="size-4 text-zinc-600" />
-          Praticar exercício
-        </OutlineButton>
-
-        <OutlineButton>
-          <Plus className="size-4 text-zinc-600" />
-          Levantar cedo
-        </OutlineButton>
-
-        <OutlineButton disabled>
-          <Plus className="size-4 text-zinc-600" />
-          Manter uma boa alimentação
-        </OutlineButton>
-      </div>
-
-      <div className="space-y-6">
+      <div className="space-y-4">
         <h2 className="text-xl font-medium">Sua semana</h2>
-        <div className="space-y-4">
-          <h3 className="font-medium">
-            Hoje <span className="text-zinc-400 text-xs">(06 de agosto)</span>
-          </h3>
 
-          <ul className="space-y-3">
-            <li className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-pink-500" />
-              <span className="text-sm text-zinc-400">
-                Você completou "
-                <span className="text-zinc-100">Acordar cedo</span>" às{" "}
-                <span className="text-zinc-100">08:13h</span>
-              </span>
-              <button
-                className="underline text-zinc-500 text-xs hover:text-zinc-400"
-                type="button"
-              >
-                Desfazer
-              </button>
-            </li>
+        {Object.entries(summary.goalsPerDay).map(([date, goals]) => {
+          const weekDay = dayjs(date).format("dddd");
+          // const parsedDate = dayjs(date).format("D[ de ]MMMM");
+          const dayLabel = dayjs(date).format("D");
+          const weekLabel = dayjs(date).format("MMMM");
 
-            <li className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-pink-500" />
-              <span className="text-sm text-zinc-400">
-                Você completou "<span className="text-zinc-100">Meditar</span>"
-                às <span className="text-zinc-100">08:13h</span>
-              </span>
-              <button
-                className="underline text-zinc-500 text-xs hover:text-zinc-400"
-                type="button"
-              >
-                Desfazer
-              </button>
-            </li>
+          const isToday = dayjs(date).isSame(now, "date");
+          const isYesterday = dayjs(date).isSame(
+            now.subtract(1, "day"),
+            "date"
+          );
 
-            <li className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-pink-500" />
-              <span className="text-sm text-zinc-400">
-                Você completou "
-                <span className="text-zinc-100">Praticar exercício</span>" às{" "}
-                <span className="text-zinc-100">08:13h</span>
-              </span>
-              <button
-                className="underline text-zinc-500 text-xs hover:text-zinc-400"
-                type="button"
-              >
-                Desfazer
-              </button>
-            </li>
-          </ul>
-        </div>
+          console.log(isYesterday);
 
-        <div className="space-y-4">
-          <h3 className="font-medium">
-            Ontem <span className="text-zinc-400 text-xs">(05 de agosto)</span>
-          </h3>
+          const weekDayLabel = isYesterday
+            ? "Ontem"
+            : isToday
+            ? "Hoje"
+            : weekDay;
 
-          <ul className="space-y-3">
-            <li className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-pink-500" />
-              <span className="text-sm text-zinc-400">
-                Você completou "
-                <span className="text-zinc-100">Acordar cedo</span>" às{" "}
-                <span className="text-zinc-100">08:13h</span>
-              </span>
-              <button
-                className="underline text-zinc-500 text-xs hover:text-zinc-400"
-                type="button"
-              >
-                Desfazer
-              </button>
-            </li>
-          </ul>
-        </div>
+          return (
+            <div className="space-y-4" key={date}>
+              <h3 className="font-medium">
+                <span className="capitalize">{weekDayLabel} </span>
+                <span className="text-zinc-400 text-xs">
+                  ({dayLabel} de <span className="capitalize">{weekLabel}</span>
+                  )
+                </span>
+              </h3>
 
-        <div className="space-y-4">
-          <h3 className="font-medium">
-            Quarta-feira{" "}
-            <span className="text-zinc-400 text-xs">(04 de agosto)</span>
-          </h3>
+              <ul className="space-y-3">
+                {goals.map((goal) => {
+                  console.log(goal);
+                  const parsedTime = dayjs(goal.completedAt).format("HH:mm[h]");
 
-          <ul className="space-y-3">
-            <li className="flex items-center gap-2">
-              <CheckCircle2 className="size-4 text-pink-500" />
-              <span className="text-sm text-zinc-400">
-                Você completou "
-                <span className="text-zinc-100">Acordar cedo</span>" às{" "}
-                <span className="text-zinc-100">08:13h</span>
-              </span>
-              <button
-                className="underline text-zinc-500 text-xs hover:text-zinc-400"
-                type="button"
-              >
-                Desfazer
-              </button>
-            </li>
-          </ul>
-        </div>
+                  return (
+                    <li className="flex items-center gap-2" key={goal.id}>
+                      <CheckCircle2 className="size-4 text-pink-500" />
+                      <span className="text-sm text-zinc-400">
+                        Você completou "
+                        <span className="text-zinc-100">{goal.title}</span>" às{" "}
+                        <span className="text-zinc-100">{parsedTime}</span>{" "}
+                        <button
+                          className="text-xs underline text-zinc-500"
+                          type="button"
+                          onClick={() => alert("Method not implemented yet.")}
+                        >
+                          Desfazer
+                        </button>
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
       </div>
     </main>
   );
